@@ -24,6 +24,7 @@ const Navbar = () => {
           <a href="/dashboard/residentials">Residentials Clients</a>
         </Show>
 
+        <a href="/dashboard/logs">Logs</a>
         <a href="/dashboard/settings">Settings</a>
       </nav>
 

@@ -9,6 +9,7 @@ import LoginView from './views/login';
 import DashboardHomeView from './views/dashboard/home';
 import DashboardResidentialsView from './views/dashboard/residentials';
 import DashboardCommercialsView from './views/dashboard/commercials';
+import DashboardLogsView from './views/dashboard/logs';
 import DashboardSettingsView from './views/dashboard/settings';
 
 const Splash = () => {
@@ -32,6 +33,7 @@ const App = () => {
       <Route path="/dashboard" component={DashboardHomeView} />
       <Route path="/dashboard/residentials" component={DashboardResidentialsView} />
       <Route path="/dashboard/commercials" component={DashboardCommercialsView} />
+      <Route path="/dashboard/logs" component={DashboardLogsView} />
       <Route path="/dashboard/settings" component={DashboardSettingsView} />
     </Router>
   )

@@ -19,7 +19,7 @@ export type User = {
 
 export enum LogAction {
   LOGIN_FAIL = "login_fail",
-  LOGIN_SUCESS = "login_success",
+  LOGIN_SUCCESS = "login_success",
   CHANGE_PASSWORD = "change_password",
   ACCOUNT_BLOCKED = "account_blocked",
   ACCOUNT_UNBLOCKED = "account_unblocked"

@@ -1,11 +1,9 @@
 import { Elysia, t } from "elysia";
-import fs from "node:fs/promises";
 
 import { jwt } from '@elysiajs/jwt'
 import { cors } from '@elysiajs/cors'
 
 import {
-  Database,
   User,
   UserRole,
   Log,
@@ -31,7 +29,7 @@ import { getTokenFromHeader } from "./headers";
 
 const database = await readDatabaseFromJSON();
 
-const app = new Elysia()
+new Elysia()
   .use(cors())
   .use(jwt({
     name: "jwt",
@@ -50,7 +48,7 @@ const app = new Elysia()
       const token = await jwt.sign(payload);
 
       user.unsuccessful_auth_attempts = 0;
-      await createLog(database, user.id, LogAction.LOGIN_SUCESS);
+      await createLog(database, user.id, LogAction.LOGIN_SUCCESS);
 
       if (body.password === "") {
         return {
@@ -388,5 +386,23 @@ const app = new Elysia()
     body: t.Object({
       username: t.String(),
     })
+  })
+  .get("/logs", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    const logs = logsForUserId(database, user.id);
+    
+    return {
+      success: true,
+      logs
+    }
   })
   .listen(3000);

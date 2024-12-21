@@ -26,6 +26,20 @@ export type UserPayload = {
   role: UserRole;
 }
 
+export enum LogAction {
+  LOGIN_FAIL = "login_fail",
+  LOGIN_SUCCESS = "login_success",
+  CHANGE_PASSWORD = "change_password",
+  ACCOUNT_BLOCKED = "account_blocked",
+  ACCOUNT_UNBLOCKED = "account_unblocked"
+}
+
+export type Log = {
+  user_id: number;
+  action: LogAction;
+  done_at: number; // timestamp : Date.now()
+}
+
 export type LoginResponse = {
   success: false
   details: {
