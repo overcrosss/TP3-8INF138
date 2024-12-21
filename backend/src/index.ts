@@ -1,245 +1,43 @@
 import { Elysia, t } from "elysia";
 import fs from "node:fs/promises";
+
 import { jwt } from '@elysiajs/jwt'
+import { cors } from '@elysiajs/cors'
 
-enum UserRole {
-  ADMIN = "admin",
-  RESIDENTIALS = "residentials",
-  COMMERCIALS = "commercials"
-}
+import {
+  Database,
+  User,
+  UserRole,
+  Log,
+  LogAction,
+  LoginErrorType,
+  ChangePasswordErrorType,
+  UserPayload
+} from "./types"
 
-type User = {
-  id: number;
-  name: string;
-  role: UserRole;
-  password: string;
-  /**
-   * when `true`, the administrator must unblock the user
-   * by changing their password
-   */
-  blocked: boolean
-  unsuccessful_auth_attempts: number;
-}
+import {
+  UserNotExistsError,
+  PasswordWrongError,
+  PasswordTooShortError,
+  PasswordUppercaseAndLowercaseError,
+  PasswordSpecialCharacterAndNumberError,
+} from "./errors"
 
-enum LogAction {
-  LOGIN_FAIL = "login_fail",
-  LOGIN_SUCESS = "login_success",
-  CHANGE_PASSWORD = "change_password",
-  ACCOUNT_BLOCKED = "account_blocked",
-  ACCOUNT_UNBLOCKED = "account_unblocked"
-}
-
-type Log = {
-  user_id: number;
-  action: LogAction;
-  done_at: number; // timestamp : Date.now()
-}
-
-type ServerConfiguration = {
-  max_auth_attempts: number;
-  wait_when_failed_ms: number;
-
-  password_min_length: number;
-  password_one_uppercase_and_one_lowercase: boolean;
-  password_one_special_character_and_one_number: boolean;
-}
-
-type Database = {
-  users: Array<User>
-  logs: Array<Log>
-  config: ServerConfiguration
-}
-
-const checkFileExists = async (file: string): Promise<boolean> => {
-  try {
-    await fs.access(file);
-    return true;
-  }
-  catch (error) {
-    return false;
-  }
-}
-
-const readDatabaseFromJSON = async (): Promise<Database> => {
-  let database: Database;
-
-  if (await checkFileExists("database.json")) {
-    database = JSON.parse(await fs.readFile("database.json", "utf-8"));
-  }
-  else {
-    database = {
-      users: [],
-      logs: [],
-      config: {
-        max_auth_attempts: 3,
-        wait_when_failed_ms: 5000, // 5 seconds
-        password_min_length: 8,
-        password_one_uppercase_and_one_lowercase: true,
-        password_one_special_character_and_one_number: true
-      }
-    }
-
-    await saveDatabaseToJSON(database);
-
-    await createUser(database, "Administrateur", UserRole.ADMIN, "");
-    await createUser(database, "Utilisateur1", UserRole.RESIDENTIALS, "");
-    await createUser(database, "Utilisateur2", UserRole.COMMERCIALS, "");
-  }
-
-  return database;
-}
-
-const saveDatabaseToJSON = async (database: Database): Promise<void> => {
-  await fs.writeFile("database.json", JSON.stringify(database, null, 2));
-};
-
-const createUser = async (database: Database, name: string, role: UserRole, password: string): Promise<void> => {
-  // see https://bun.sh/docs/api/hashing
-  const passwordHashed = password && await Bun.password.hash(password, {
-    algorithm: "bcrypt"
-  });
-
-  const user: User = {
-    id: database.users.length + 1,
-    name, role,
-    password: passwordHashed,
-    blocked: false,
-    unsuccessful_auth_attempts: 0
-  };
-
-  database.users.push(user);
-  await saveDatabaseToJSON(database);
-};
-
-const createLog = async (userId: number, action: LogAction): Promise<void> => {
-  const log: Log = {
-    user_id: userId,
-    action,
-    done_at: Date.now()
-  };
-
-  database.logs.push(log);
-  await saveDatabaseToJSON(database);
-}
-
-class PasswordWrongError extends Error {
-  constructor(public userId: number) {
-    super("Password is wrong");
-    this.name = "PasswordWrongError";
-  }
-}
-
-class UserNotExistsError extends Error {
-  constructor() {
-    super("User does not exist");
-    this.name = "UserNotExistsError";
-  }
-}
-
-enum LoginErrorType {
-  USER_NOT_EXISTS = "user_not_exists",
-  PASSWORD_WRONG = "password_wrong",
-  CHANGE_PASSWORD = "change_password",
-  CHANGE_PASSWORD_EMPTY = "change_password_empty"
-}
-
-enum ChangePasswordErrorType {
-  TOO_SHORT = "too_short",
-  PASSWORD_WRONG = "password_wrong",
-  UPPERCASE_AND_LOWERCASE = "uppercase_and_lowercase",
-  SPECIAL_CHARACTER_AND_NUMBER = "special_character_and_number"
-}
-
-const validateUser = async (database: Database, name: string, password: string): Promise<User> => {
-  const user = database.users.find(user => user.name === name);
-  if (!user) throw new UserNotExistsError();
-
-  if (password === "" && user.password === "") {
-    return user;
-  }
-  
-  // see https://bun.sh/docs/api/hashing
-  const isMatch = await Bun.password.verify(password, user.password);
-  if (!isMatch) throw new PasswordWrongError(user.id);
-
-  return user;
-};
-
-class PasswordTooShortError extends Error {
-  constructor(public minLength: number) {
-    super(`Password should be at least ${minLength} characters`);
-    this.name = "PasswordTooShortError";
-  }
-}
-
-class PasswordUppercaseAndLowercaseError extends Error {
-  constructor() {
-    super(`Password should be at least contain one uppercase and one lowercase character`);
-    this.name = "PasswordUppercaseAndLowercaseError";
-  }
-}
-
-class PasswordSpecialCharacterAndNumberError extends Error {
-  constructor() {
-    super(`Password should be at least contain one special character and one number`);
-    this.name = "PasswordSpecialCharacterAndNumberError";
-  }
-}
-
-const changePassword = async (database: Database, name: string, oldPassword: string, newPassword: string): Promise<void> => {
-  const user = await validateUser(database, name, oldPassword);
-  const { config } = database;
-
-  if (newPassword.length < config.password_min_length) {
-    throw new PasswordTooShortError(config.password_min_length);
-  }
-
-  if (config.password_one_uppercase_and_one_lowercase) {
-    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword)) {
-      throw new PasswordUppercaseAndLowercaseError();
-    }
-  }
-
-  if (config.password_one_special_character_and_one_number) {
-    if (!/[0-9]/.test(newPassword) || !/[!?@#$%^&*]/.test(newPassword)) {
-      throw new PasswordSpecialCharacterAndNumberError();
-    }
-  }
-
-  // see https://bun.sh/docs/api/hashing
-  const newPasswordHashed = await Bun.password.hash(newPassword, {
-    algorithm: "argon2id"
-  });
-
-  user.password = newPasswordHashed;
-  await saveDatabaseToJSON(database);
-};
-
-const logsForUserId = (database: Database, userId: number): Array<Log> => {
-  const logs = database.logs.filter(log => log.user_id === userId);
-  
-  // sort by descending order
-  logs.sort((a, b) => b.done_at - a.done_at);
-  
-  return logs;
-}
-
-type UserPayload = {
-  id: number;
-  name: string;
-  role: UserRole;
-}
+import { readDatabaseFromJSON, saveDatabaseToJSON } from "./database"
+import { createLog, logsForUserId } from "./logs";
+import { validateUser, changePassword, generatePassword } from "./users";
+import { wait } from "./wait";
+import { getTokenFromHeader } from "./headers";
 
 const database = await readDatabaseFromJSON();
 
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 const app = new Elysia()
+  .use(cors())
   .use(jwt({
     name: "jwt",
     secret: "UN_MDP_À_GARDER_SECRET!!!"
   }))
-  .post("/login", async ({ jwt, body, cookie: { auth } }) => {
+  .post("/login", async ({ jwt, body }) => {
     try {
       const user = await validateUser(database, body.username, body.password);
 
@@ -249,43 +47,41 @@ const app = new Elysia()
         role: user.role
       };
 
-      auth.set({
-        value: await jwt.sign(payload),
-        httpOnly: true, // very important to prevent accessing the cookie from document.cookie
-        maxAge: 7 * 86400, // 7 days
-        path: '/',
-      });
+      const token = await jwt.sign(payload);
 
       user.unsuccessful_auth_attempts = 0;
-      await createLog(user.id, LogAction.LOGIN_SUCESS);
+      await createLog(database, user.id, LogAction.LOGIN_SUCESS);
 
       if (body.password === "") {
         return {
           success: false,
           details: {
             type: LoginErrorType.CHANGE_PASSWORD_EMPTY,
-            message: "You must define a password"
+            message: "You must define a password",
+            token
           }
         }
       }
 
       const logs = logsForUserId(database, user.id);
-      const twoLastLogs = logs.slice(0, 2);
+      const twoLastLogs = logs.slice(1, 3);
 
       // if we have ACCOUNT_UNBLOCKED and CHANGE_PASSWORD logs
-      if (twoLastLogs.length === 2 && twoLastLogs[0].action === LogAction.ACCOUNT_UNBLOCKED && twoLastLogs[1].action === LogAction.CHANGE_PASSWORD) {
+      if (twoLastLogs.length === 2 && twoLastLogs[1].action === LogAction.ACCOUNT_UNBLOCKED && twoLastLogs[0].action === LogAction.CHANGE_PASSWORD) {
         return {
           success: false,
           details: {
             type: LoginErrorType.CHANGE_PASSWORD,
-            message: "You must change your password"
+            message: "You must change your password",
+            token
           }
         }
       }
 
       return {
         success: true,
-        user: payload
+        user: payload,
+        token
       }
     }
     catch (error) {
@@ -301,14 +97,14 @@ const app = new Elysia()
       else if (error instanceof PasswordWrongError) {
         const user = database.users.find(user => user.id === error.userId)!;
         user.unsuccessful_auth_attempts++;
-        await createLog(user.id, LogAction.LOGIN_FAIL);
+        await createLog(database, user.id, LogAction.LOGIN_FAIL);
 
         // prevent spamming requests
         await wait(database.config.wait_when_failed_ms);
         
         if (user.unsuccessful_auth_attempts >= database.config.max_auth_attempts) {
           user.blocked = true;
-          await createLog(user.id, LogAction.ACCOUNT_BLOCKED);
+          await createLog(database, user.id, LogAction.ACCOUNT_BLOCKED);
 
           return {
             success: false,
@@ -334,8 +130,8 @@ const app = new Elysia()
       password: t.String()
     })
   })
-  .post("/change-password", async ({ jwt, body, cookie: { auth } }) => {
-    const user = await jwt.verify(auth.value) as false | UserPayload;
+  .post("/change-password", async ({ jwt, body, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
 
     if (!user) {
       return {
@@ -348,7 +144,7 @@ const app = new Elysia()
 
     try {
       await changePassword(database, user.name, body.oldPassword, body.newPassword);
-      await createLog(user.id, LogAction.CHANGE_PASSWORD);
+      await createLog(database, user.id, LogAction.CHANGE_PASSWORD);
 
       return { success: true }
     }
@@ -394,6 +190,203 @@ const app = new Elysia()
     body: t.Object({
       oldPassword: t.String(),
       newPassword: t.String()
+    })
+  })
+  .get("/me", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    return {
+      success: true,
+      user
+    }
+  })
+  .get("/commercials", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.COMMERCIALS) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    const commercials = database.users.filter(user => user.role === UserRole.COMMERCIALS);
+    return {
+      success: true,
+      commercials
+    }
+  })
+  .get("/residentials", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.RESIDENTIALS) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    const residentials = database.users.filter(user => user.role === UserRole.RESIDENTIALS);
+    return {
+      success: true,
+      residentials
+    }
+  })
+  .get("/server-config", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    return {
+      success: true,
+      config: database.config
+    }
+  })
+  .post("/server-config", async ({ jwt, body, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    database.config = body;
+    await saveDatabaseToJSON(database);
+
+    return { success: true }
+  }, {
+    body: t.Object({
+      max_auth_attempts: t.Number(),
+      wait_when_failed_ms: t.Number(),
+      password_min_length: t.Number(),
+      password_one_uppercase_and_one_lowercase: t.Boolean(),
+      password_one_special_character_and_one_number: t.Boolean(),
+    })
+  })
+  .get("/blocked", async ({ jwt, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    const blocked = database.users.filter(user => user.blocked);
+    return {
+      success: true,
+      blocked
+    }
+  })
+  .post("/unblock", async ({ jwt, body, headers }) => {
+    const user = await jwt.verify(getTokenFromHeader(headers)) as false | UserPayload;
+
+    if (!user) {
+      return {
+        success: false,
+        details: {
+          message: "You must be logged in"
+        }
+      }
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      return {
+        success: false,
+        details: {
+          message: "You do not have the necessary permissions"
+        }
+      }
+    }
+
+    const userToUnblock = database.users.find(user => user.name === body.username)!;
+    userToUnblock.blocked = false;
+    userToUnblock.unsuccessful_auth_attempts = 0;
+    await createLog(database, userToUnblock.id, LogAction.ACCOUNT_UNBLOCKED);
+
+    const newPassword = generatePassword(database);
+    userToUnblock.password = await Bun.password.hash(newPassword, { algorithm: "argon2id" });
+    await createLog(database, userToUnblock.id, LogAction.CHANGE_PASSWORD);
+    
+    return {
+      success: true,
+      password: newPassword
+    };
+  }, {
+    body: t.Object({
+      username: t.String(),
     })
   })
   .listen(3000);

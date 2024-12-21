@@ -8,12 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@elysiajs/cors':
+        specifier: ^1.1.1
+        version: 1.1.1(elysia@1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2))
       '@elysiajs/jwt':
         specifier: ^1.1.1
         version: 1.1.1(elysia@1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2))
       elysia:
         specifier: ^1.1.26
         version: 1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2)
+      generate-password:
+        specifier: ^1.7.1
+        version: 1.7.1
     devDependencies:
       '@types/bun':
         specifier: ^1.1.14
@@ -23,6 +29,11 @@ importers:
         version: 5.7.2
 
 packages:
+
+  '@elysiajs/cors@1.1.1':
+    resolution: {integrity: sha512-Bl6JSURwbneaJqkq02bd0C/F8StkmU5zoPLpnSncy4DZSU8TDwWPXxmoHqozI3hf1piDaSQ+I21cmpjPlQ8uYQ==}
+    peerDependencies:
+      elysia: '>= 1.1.0'
 
   '@elysiajs/jwt@1.1.1':
     resolution: {integrity: sha512-DpTFeTstzltmQdorIU7b1VlaAZLOhV18rF4aC0mkxbJTPmRLUwjf549osnGKuXHoJLRgeSZYb9POKD6hm7NwHw==}
@@ -63,6 +74,9 @@ packages:
   fast-decode-uri-component@1.0.1:
     resolution: {integrity: sha512-WKgKWg5eUxvRZGwW8FvfbaH7AXSh2cL+3j5fMGzUMCxWBJ3dV3a7Wz8y2f/uQ0e3B6WmodD3oS54jTQ9HVTIIg==}
 
+  generate-password@1.7.1:
+    resolution: {integrity: sha512-9bVYY+16m7W7GczRBDqXE+VVuCX+bWNrfYKC/2p2JkZukFb2sKxT6E3zZ3mJGz7GMe5iRK0A/WawSL3jQfJuNQ==}
+
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
 
@@ -75,6 +89,10 @@ packages:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
 snapshots:
+
+  '@elysiajs/cors@1.1.1(elysia@1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2))':
+    dependencies:
+      elysia: 1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2)
 
   '@elysiajs/jwt@1.1.1(elysia@1.1.26(@sinclair/typebox@0.34.13)(typescript@5.7.2))':
     dependencies:
@@ -111,6 +129,8 @@ snapshots:
       typescript: 5.7.2
 
   fast-decode-uri-component@1.0.1: {}
+
+  generate-password@1.7.1: {}
 
   jose@4.15.9: {}
 

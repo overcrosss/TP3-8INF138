@@ -1,0 +1,127 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Administrateur",
+      "role": "admin",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$IbpVMORPEyiA1p/QwJIfRXB0QT9H4G46ups1g4dPjag$J5FC/96/I4NzcP85L1N/a/1FjW+5dPH9vJKpOK6Ommc",
+      "blocked": false,
+      "unsuccessful_auth_attempts": 0
+    },
+    {
+      "id": 2,
+      "name": "Utilisateur1",
+      "role": "residentials",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$YxHjcwyilzhsk0Ehy+teMJWcMvDV2jnhBElxYw2wMZM$m7+VdCu4WS0DhQUTD0MCR9iV//bLvxErbVn5q6QAgOg",
+      "blocked": false,
+      "unsuccessful_auth_attempts": 0
+    },
+    {
+      "id": 3,
+      "name": "Utilisateur2",
+      "role": "commercials",
+      "password": "",
+      "blocked": false,
+      "unsuccessful_auth_attempts": 0
+    }
+  ],
+  "logs": [
+    {
+      "user_id": 1,
+      "action": "login_success",
+      "done_at": 1734818050077
+    },
+    {
+      "user_id": 1,
+      "action": "change_password",
+      "done_at": 1734818056642
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818235698
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818239245
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818246307
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818247914
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818255948
+    },
+    {
+      "user_id": 2,
+      "action": "account_blocked",
+      "done_at": 1734818260966
+    },
+    {
+      "user_id": 2,
+      "action": "login_fail",
+      "done_at": 1734818278336
+    },
+    {
+      "user_id": 2,
+      "action": "account_blocked",
+      "done_at": 1734818283354
+    },
+    {
+      "user_id": 1,
+      "action": "login_success",
+      "done_at": 1734818310656
+    },
+    {
+      "user_id": 1,
+      "action": "login_success",
+      "done_at": 1734818416515
+    },
+    {
+      "user_id": 2,
+      "action": "account_unblocked",
+      "done_at": 1734818428385
+    },
+    {
+      "user_id": 2,
+      "action": "change_password",
+      "done_at": 1734818428653
+    },
+    {
+      "user_id": 2,
+      "action": "login_success",
+      "done_at": 1734818747392
+    },
+    {
+      "user_id": 2,
+      "action": "change_password",
+      "done_at": 1734818758671
+    },
+    {
+      "user_id": 1,
+      "action": "login_fail",
+      "done_at": 1734818789156
+    },
+    {
+      "user_id": 1,
+      "action": "login_success",
+      "done_at": 1734818812029
+    }
+  ],
+  "config": {
+    "max_auth_attempts": 5,
+    "wait_when_failed_ms": 5000,
+    "password_min_length": 8,
+    "password_one_uppercase_and_one_lowercase": true,
+    "password_one_special_character_and_one_number": true
+  }
+}
