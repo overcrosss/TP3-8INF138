@@ -166,7 +166,7 @@ const DashboardSettingsView = () => {
                 />
               </label>
               <label>
-                Delay in MS when wrong password
+                Password minimum length
                 <input
                   class="ml-2"
                   type="number"
